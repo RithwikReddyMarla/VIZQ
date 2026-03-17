@@ -141,7 +141,7 @@ python -m streamlit run app.py
 ### 🧾 Input (User Query)
 
 ```
-Show average price of houses by location
+show median income and total rooms for houses with population 322
 ```
 
 ---
@@ -149,26 +149,29 @@ Show average price of houses by location
 ### 🧠 Generated SQL
 
 ```sql
-SELECT location, AVG(price) 
-FROM housing 
-GROUP BY location;
+SELECT median_income, total_rooms FROM housing WHERE population = 322;
 ```
 
 ---
 
 ### 📊 Output (Table)
 
-| Location | Avg Price |
-|----------|----------|
-| Hyderabad | 550000 |
-| Bangalore | 720000 |
-| Chennai   | 480000 |
+| median_income | total_rooms |
+|--------------|------------|
+| 8.3252       | 880        |
+| 4.7361       | 914        |
+| 5.1831       | 440        |
+| 4.2917       | 762        |
 
 ---
 
 ### 📈 Visualization
 
-- Bar chart showing **average price per location**
+- Bar chart
+<img width="537" height="530" alt="Screenshot 2026-03-17 193129" src="https://github.com/user-attachments/assets/205d35e3-1d75-4f54-9e9d-f878af167175" />
+
+-pie chart
+<img width="1172" height="521" alt="Screenshot 2026-03-17 193427" src="https://github.com/user-attachments/assets/0ea59168-0962-4839-b23f-d20e56731f1d" />
 
 ---
 
