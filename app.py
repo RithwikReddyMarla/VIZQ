@@ -13,16 +13,20 @@ genai.api_key = os.environ['GOOGLE_API_KEY']
 # Configure Streamlit for better performance
 st.set_page_config(page_title="VizQ", layout="wide", initial_sidebar_state="collapsed")
 
-# Clean up old custom tables on app start (keep housing.csv)
+# Clean up old custom tables on app start (keep housing.csv and current selected table)
 def cleanup_custom_tables():
     db_name = "dataset.db"
     try:
+        current_table = None
+        if 'table' in st.session_state and st.session_state['table'] is not None:
+            current_table = st.session_state['table'].lower()
+        
         tables = get_table_names_early(db_name)
         if tables:
             conn = sqlite3.connect(db_name)
             cursor = conn.cursor()
             for table in tables:
-                if table.lower() != 'housing':
+                if table.lower() != 'housing' and table.lower() != current_table:
                     cursor.execute(f"DROP TABLE IF EXISTS {table}")
             conn.commit()
             conn.close()
@@ -93,7 +97,7 @@ def plot_bar_chart(columns, values, xlabel, ylabel):
         if not numeric_values:
             return None
         
-        fig, ax = plt.subplots(figsize=(6, 3.5))
+        fig, ax = plt.subplots(figsize=(2, 2))
         ax.bar(valid_columns, numeric_values, color='steelblue')
         ax.set_xlabel(xlabel, fontsize=10)
         ax.set_ylabel(ylabel, fontsize=10)
@@ -125,7 +129,7 @@ def plot_pie_chart(labels, sizes, title):
             st.error("No valid numeric values for pie chart")
             return None
         
-        fig, ax = plt.subplots(figsize=(5.5, 5.5))
+        fig, ax = plt.subplots(figsize=(2, 2))
         colors = plt.cm.Set3(range(len(numeric_sizes)))
         ax.pie(numeric_sizes, labels=valid_labels, autopct='%1.1f%%', startangle=140, colors=colors)
         ax.set_title(title, fontsize=12, fontweight='bold')
@@ -151,7 +155,6 @@ def create_db_from_csv(csv_file, db_name):
         return None
 
 # Function to get table names from the database
-@st.cache_data(ttl=1800)
 def get_table_names(db):
     try:
         conn = sqlite3.connect(db)
@@ -165,7 +168,6 @@ def get_table_names(db):
         return []
 
 # Function to get column names for a specific table
-@st.cache_data(ttl=1800)
 def get_column_names(db, table_name):
     try:
         conn = sqlite3.connect(db)
@@ -239,6 +241,9 @@ if st.session_state['page'] == 1:
             if custom_table_name:
                 st.success(f"✓ File '{uploaded_file.name}' uploaded!")
                 
+                # Clear cache to show newly uploaded table
+                # st.cache_data.clear()
+                
                 # Show table dropdown after upload
                 available_tables = get_table_names(db_name)
                 if available_tables:
@@ -279,10 +284,9 @@ elif st.session_state['page'] == 2:
         with col1:
             if st.button("Generate Query", type="primary", use_container_width=True):
                 if question.strip():
-                    with st.spinner():
-                        columns_str = ", ".join(columns)
-                        custom_prompt = custom_prompt_template.format(table_name=table, columns=columns_str)
-                        response = get_gemini_response(question, custom_prompt)
+                    columns_str = ", ".join(columns)
+                    custom_prompt = custom_prompt_template.format(table_name=table, columns=columns_str)
+                    response = get_gemini_response(question, custom_prompt)
                     
                     if response:
                         sql_query = response.strip().replace('```', '').strip()
@@ -292,8 +296,7 @@ elif st.session_state['page'] == 2:
                         st.subheader("Generated SQL Query:")
                         st.code(sql_query, language="sql")
                         
-                        with st.spinner():
-                            result, result_columns = execute_sql_query(sql_query, db)
+                        result, result_columns = execute_sql_query(sql_query, db)
                         
                         if result and result_columns:
                             st.session_state['results'] = result
@@ -302,7 +305,7 @@ elif st.session_state['page'] == 2:
                             df = pd.DataFrame(result, columns=result_columns)
                             st.subheader("Results:")
                             st.caption(f"📊 Rows: {len(df)} | Columns: {len(df.columns)}")
-                            st.dataframe(df, use_container_width=True, height=300)
+                            st.dataframe(df, use_container_width=True)
                             st.success("✓ Query executed!")
                         else:
                             st.error("No results found or query execution failed.")
@@ -338,8 +341,7 @@ elif st.session_state['page'] == 2:
                         st.info(f"📊 Plotting {len(result)} data points")
                         
                         if graph_type in ["Bar Chart", "Both"]:
-                            with st.spinner():
-                                fig_bar = plot_bar_chart(x_values, y_values, result_columns[0], result_columns[1])
+                            fig_bar = plot_bar_chart(x_values, y_values, result_columns[0], result_columns[1])
                             if fig_bar:
                                 st.pyplot(fig_bar)
                                 st.success("✓ Bar chart generated!")
@@ -347,8 +349,7 @@ elif st.session_state['page'] == 2:
                                 st.error("Failed to generate bar chart.")
                         
                         if graph_type in ["Pie Chart", "Both"]:
-                            with st.spinner():
-                                fig_pie = plot_pie_chart(x_values, y_values, f"{result_columns[0]} vs {result_columns[1]}")
+                            fig_pie = plot_pie_chart(x_values, y_values, f"{result_columns[0]} vs {result_columns[1]}")
                             if fig_pie:
                                 st.pyplot(fig_pie)
                                 st.success("✓ Pie chart generated!")
@@ -357,5 +358,5 @@ elif st.session_state['page'] == 2:
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
             else:
-                st.warning("⚠️ Cannot visualize: need at least 2 columns and 1 row of data.")
+                st.error("❌ Cannot generate graphs: At least 2 columns are required for visualization!")
     
