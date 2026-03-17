@@ -109,11 +109,92 @@ python -m streamlit run app.py
 
 ---
 
-## 📸 Example Use Cases
+## ▶️ How to Use
 
-- “Show all houses with price > 500000”  
-- “Average price by location”  
-- “Plot price vs area”  
+1. Run the application:
+   ```bash
+   python -m streamlit run app.py
+   ```
+
+2. Open in browser:
+   ```
+   http://localhost:8501
+   ```
+
+3. Choose one option:
+   - Upload your own CSV dataset  
+   - OR use the default housing dataset  
+
+4. Enter your query in natural language  
+
+5. Click **Generate**  
+
+6. View:
+   - Generated SQL query  
+   - Table results  
+   - Visualization (chart)  
+
+---
+
+## 📌 Example Query & Output
+
+### 🧾 Input (User Query)
+
+```
+Show average price of houses by location
+```
+
+---
+
+### 🧠 Generated SQL
+
+```sql
+SELECT location, AVG(price) 
+FROM housing 
+GROUP BY location;
+```
+
+---
+
+### 📊 Output (Table)
+
+| Location | Avg Price |
+|----------|----------|
+| Hyderabad | 550000 |
+| Bangalore | 720000 |
+| Chennai   | 480000 |
+
+---
+
+### 📈 Visualization
+
+- Bar chart showing **average price per location**
+
+---
+
+### 🧾 Another Example
+
+**Input:**
+```
+Show top 5 most expensive houses
+```
+
+**Generated SQL:**
+```sql
+SELECT * FROM housing
+ORDER BY price DESC
+LIMIT 5;
+```
+
+---
+
+## 💡 Tips
+
+- Use simple natural language (like speaking to a human)
+- Example:
+  - "Show all houses with 3 bedrooms"
+  - "Plot price vs area"
+  - "Count houses by location"
 
 ---
 
